@@ -7,7 +7,7 @@ require 'optimist'
 require 'csv'
 
 def write_to_csv(issues)
-  file = "gh_client#{Time.now}.csv"
+  file = "gh_client_#{Time.now}.csv"
   CSV.open(file, "w", :write_headers=> true, :headers => %w[ID Title URL Labels Created Updated Closed]) do |writer|
     issues.each do |issue|
       writer << issue
@@ -46,7 +46,7 @@ opts = Optimist::options do
 end
 
 if opts[:repo].nil?
-  puts opts
+  exec "bundle exec ruby #{__FILE__} -h"
   exit
 end
 
