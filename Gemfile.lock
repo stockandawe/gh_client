@@ -16,6 +16,8 @@ GEM
     faraday-excon (1.1.0)
     faraday-net_http (1.0.1)
     faraday-net_http_persistent (1.1.0)
+    faraday_middleware (1.1.0)
+      faraday (~> 1.0)
     multipart-post (2.1.1)
     octokit (4.21.0)
       faraday (>= 0.9)
@@ -26,6 +28,10 @@ GEM
     sawyer (0.8.2)
       addressable (>= 2.3.5)
       faraday (> 0.8, < 2.0)
+    zenhub_ruby (0.2.1)
+      faraday
+      faraday_middleware
+      octokit
 
 PLATFORMS
   x86_64-darwin-20
@@ -33,6 +39,7 @@ PLATFORMS
 DEPENDENCIES
   octokit (~> 4.0)
   optimist (~> 3.0, >= 3.0.1)
+  zenhub_ruby (~> 0.2.1)
 
 RUBY VERSION
    ruby 2.6.6p146
