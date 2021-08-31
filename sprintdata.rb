@@ -75,18 +75,18 @@ class SprintData
     if opts[:test] == true 
     then 
       return gh_client.
-        milestones('himaxwell/maxwell', state:'all', per_page:100, direction:'desc').
+        milestones(opts[:repo], state:'all', per_page:100, direction:'desc').
         select {|m| m.title.match(/OS Lender - 🐘😄 Earl/i)}
     else 
       return gh_client.
-        milestones('himaxwell/maxwell', state:'all', per_page:100, direction:'desc').
+        milestones(opts[:repo], state:'all', per_page:100, direction:'desc').
         select {|m| m.title.match(/#{team}/i)}
     end
   end
 
   def fetch_issues_for_milestone(milestone_title)
     puts "\n***************************\nfetching issues data for milestone: " + milestone_title
-    issues = gh_client.search_issues('is:issue milestone:"' + milestone_title + '"', {repo: 'himaxwell/maxwell'})
+    issues = gh_client.search_issues('is:issue milestone:"' + milestone_title + '"', {repo: opts[:repo]})
     trim_issues = {}
     issues.items.each do |i|
       zhdata = fetch_zenhub_data(i.number)
@@ -104,7 +104,7 @@ class SprintData
 
   def fetch_zenhub_data(issue_number)
     puts "fetching zenhub data for issue: " + issue_number.to_s
-    zh_data = zh_client.issue_data('himaxwell/maxwell',13770).body
+    zh_data = zh_client.issue_data(opts[:repo],13770).body
     #only need a subset of this data
     ret = {}
     if zh_data.nil?
@@ -139,7 +139,7 @@ if ENV["GITHUB_PAT"].nil? || ENV["ZENHUB_PAT"].nil?
 end
 
 opts = Optimist::options do
-  opt :repo, "Specify GitHub repo. E.g. 'stockandawe/gh_client'", type: :string, default: 'himaxwell/maxwell'
+  opt :repo, "Specify GitHub repo. E.g. 'stockandawe/gh_client'", type: :string
   opt :csv, "Set as true a csv output", :type => :boolean, :default => false
   opt :team, "Run an analysis reeport for the specified team", type: :string, default: 'lender'
   opt :test, "run on only 1 milestone for more efficient testing", :type => :boolean , :default => false
