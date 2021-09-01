@@ -37,6 +37,7 @@ class SprintData
     sprintdata = {}
     milestones.each do |m|
       sprintdata["#{m[:number]}"] = {}
+      sprintdata["#{m[:number]}"][:number] = m[:number]
       sprintdata["#{m[:number]}"][:title] = m[:title]
       sprintdata["#{m[:number]}"][:due_on] = m[:due_on]
       sprintdata["#{m[:number]}"][:issues] = fetch_issues_for_milestone(m[:title])
@@ -76,7 +77,7 @@ class SprintData
     then 
       return gh_client.
         milestones(opts[:repo], state:'all', per_page:100, direction:'desc').
-        select {|m| m.title.match(/OS Lender - 🐘😄 Earl/i)}
+        select {|m| m.title.match(/iggy/i)}
     else 
       return gh_client.
         milestones(opts[:repo], state:'all', per_page:100, direction:'desc').
@@ -104,7 +105,7 @@ class SprintData
 
   def fetch_zenhub_data(issue_number)
     puts "fetching zenhub data for issue: " + issue_number.to_s
-    zh_data = zh_client.issue_data(opts[:repo],13770).body
+    zh_data = zh_client.issue_data(opts[:repo],issue_number).body
     #only need a subset of this data
     ret = {}
     if zh_data.nil?
