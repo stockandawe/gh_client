@@ -28,6 +28,7 @@ GEM
       faraday (> 0.8, < 2.0)
 
 PLATFORMS
+  universal-darwin-21
   x86_64-darwin-20
 
 DEPENDENCIES
@@ -35,7 +36,7 @@ DEPENDENCIES
   optimist (~> 3.0, >= 3.0.1)
 
 RUBY VERSION
-   ruby 2.6.6p146
+   ruby 2.6.8p205
 
 BUNDLED WITH
    2.2.17
