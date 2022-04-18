@@ -39,7 +39,7 @@ end
 opts = Optimist::options do
   opt :repo, "Specify GitHub repo. E.g. 'stockandawe/gh_client'", type: :string
   opt :labels, "Specify a list of comma separated label names. E.g. 'Bug,Internal'", :type => :string, :default => "Bug"
-  opt :state, "Specify state of the issue. Can be either 'open', 'closed', or 'all'", :type => :string, :default => "open"
+  opt :event, "Specify of the event that you want to track. Can be either 'created' or 'closed'", :type => :string, :default => "created"
   opt :start_date, "Specify the start date YYYY-MM-DD format", :type => :string, :default => "#{Time.now.year}-#{Time.now.month}-1"
   opt :end_date, "Specify the end date YYYY-MM-DD format", :type => :string, :default => "#{Time.now.year}-#{Time.now.month}-#{Time.now.day}"
   opt :csv, "Set as true a csv output", :type => :boolean, :default => false
@@ -53,24 +53,13 @@ end
 client = Octokit::Client.new(access_token: ENV["GITHUB_PAT"], per_page: 100)
 client.auto_paginate = true
 
-issues_1 = normalize_issues(
-  client.issues opts[:repo],
-                labels: opts[:labels],
-                state: opts[:state],
-                since: "#{opts[:start_date]}T00:00:00Z",
-                direction: "asc"
-)
+#https://github.com/himaxwell/maxwell/issues?q=is%3Aissue+label%3A%22Bug%22+created%3A2022-01-14..2022-01-21+
+query = "repo:#{opts[:repo]} is:issue label:#{opts[:labels]} #{opts[:event]}:#{opts[:start_date]}..#{opts[:end_date]}"
 
-issues_2 = normalize_issues(
-  client.issues "himaxwell/maxwell",
-                labels: opts[:labels],
-                state: opts[:state],
-                since: "#{opts[:end_date]}T00:00:00Z",
-                direction: "asc"
-)
+puts "Github filter query used: " + query
 
-issues = issues_1 - issues_2
+searched =  client.search_issues query
 
-puts "#{issues.count} (#{opts[:state]}) issues tagged with #{opts[:labels]} between #{opts[:start_date]} and #{opts[:end_date]}"
+puts "#{searched.items.count} issues tagged with #{opts[:labels]} were #{opts[:event]} between #{opts[:start_date]} and #{opts[:end_date]}"
 
 write_to_csv(issues) if opts[:csv]
