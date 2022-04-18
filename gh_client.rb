@@ -10,7 +10,12 @@ def write_to_csv(issues)
   file = "gh_client_#{Time.now}.csv"
   CSV.open(file, "w", :write_headers=> true, :headers => %w[ID Title URL Labels Created Updated Closed]) do |writer|
     issues.each do |issue|
-      writer << issue
+      labels = []
+      issue.labels.each do |label|
+        labels << label.name
+      end
+      row = [issue.id.to_s, issue.title, issue.url, labels.join('|'), issue.created_at, issue.updated_at, issue.closed_at]
+      writer << row
     end
   end
 
@@ -60,6 +65,6 @@ puts "Github filter query used: " + query
 
 issues =  client.search_issues query
 
-puts "#{issues.items.count} issues tagged with #{opts[:labels]} were #{opts[:event]} between #{opts[:start_date]} and #{opts[:end_date]}"
+puts "#{issues.total_count} issues tagged with #{opts[:labels]} were #{opts[:event]} between #{opts[:start_date]} and #{opts[:end_date]}"
 
-write_to_csv(issues) if opts[:csv]
+write_to_csv(issues.items) if opts[:csv]
