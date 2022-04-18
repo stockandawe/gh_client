@@ -58,8 +58,8 @@ query = "repo:#{opts[:repo]} is:issue label:#{opts[:labels]} #{opts[:event]}:#{o
 
 puts "Github filter query used: " + query
 
-searched =  client.search_issues query
+issues =  client.search_issues query
 
-puts "#{searched.items.count} issues tagged with #{opts[:labels]} were #{opts[:event]} between #{opts[:start_date]} and #{opts[:end_date]}"
+puts "#{issues.items.count} issues tagged with #{opts[:labels]} were #{opts[:event]} between #{opts[:start_date]} and #{opts[:end_date]}"
 
 write_to_csv(issues) if opts[:csv]
