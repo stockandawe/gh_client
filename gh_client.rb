@@ -14,7 +14,14 @@ def write_to_csv(issues)
       issue.labels.each do |label|
         labels << label.name
       end
-      row = [issue.id.to_s, issue.title, issue.url, labels.join('|'), issue.created_at, issue.updated_at, issue.closed_at]
+      row = [issue.id.to_s, 
+             issue.title, 
+             issue.url, 
+             labels.join('|'), 
+             issue.created_at&.strftime("%F %T"), 
+             issue.updated_at&.strftime("%F %T"), 
+             issue.closed_at&.strftime("%F %T")
+      ]
       writer << row
     end
   end
@@ -43,7 +50,7 @@ end
 
 opts = Optimist::options do
   opt :repo, "Specify GitHub repo. E.g. 'stockandawe/gh_client'", type: :string
-  opt :labels, "Specify a list of comma separated label names. E.g. 'Bug,Internal'", :type => :string, :default => "Bug"
+  opt :labels, "Specify a list of comma separated label names. E.g. 'Bug,Internal'", :type => :string, :default => nil
   opt :event, "Specify of the event that you want to track. Can be either 'created' or 'closed'", :type => :string, :default => "created"
   opt :start_date, "Specify the start date YYYY-MM-DD format", :type => :string, :default => "#{Time.now.year}-#{Time.now.month}-1"
   opt :end_date, "Specify the end date YYYY-MM-DD format", :type => :string, :default => "#{Time.now.year}-#{Time.now.month}-#{Time.now.day}"
@@ -59,12 +66,17 @@ client = Octokit::Client.new(access_token: ENV["GITHUB_PAT"], per_page: 100)
 client.auto_paginate = true
 
 #https://github.com/himaxwell/maxwell/issues?q=is%3Aissue+label%3A%22Bug%22+created%3A2022-01-14..2022-01-21+
-query = "repo:#{opts[:repo]} is:issue label:#{opts[:labels]} #{opts[:event]}:#{opts[:start_date]}..#{opts[:end_date]}"
+query = "repo:#{opts[:repo]} is:issue "
+query += "label:#{opts[:labels]} " if !opts[:labels].nil?
+query += "#{opts[:event]}:#{opts[:start_date]}..#{opts[:end_date]}"
 
 puts "Github filter query used: " + query
 
 issues =  client.search_issues query
 
-puts "#{issues.total_count} issues tagged with #{opts[:labels]} were #{opts[:event]} between #{opts[:start_date]} and #{opts[:end_date]}"
+message = "#{issues.total_count} issues "
+message += "tagged with #{opts[:labels]} " if !opts[:labels].nil?
+message += "were #{opts[:event]} between #{opts[:start_date]} and #{opts[:end_date]}"
+puts message
 
 write_to_csv(issues.items) if opts[:csv]
