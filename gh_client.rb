@@ -5,6 +5,7 @@ require 'octokit'
 require 'optparse'
 require 'optimist'
 require 'csv'
+require 'date'
 
 def write_to_csv(issues)
   file = "gh_client_#{Time.now}.csv"
@@ -65,10 +66,14 @@ end
 client = Octokit::Client.new(access_token: ENV["GITHUB_PAT"], per_page: 100)
 client.auto_paginate = true
 
-#https://github.com/himaxwell/maxwell/issues?q=is%3Aissue+label%3A%22Bug%22+created%3A2022-01-14..2022-01-21+
+# make sure dates are formatted how gethub likes them 
+# i.e.  22-8-9 => 2022-08-09
+start_date = Date.parse(opts[:start_date]).strftime("%Y-%m-%d")
+end_date = Date.parse(opts[:end_date]).strftime("%Y-%m-%d")
+
 query = "repo:#{opts[:repo]} is:issue "
 query += "label:#{opts[:labels]} " if !opts[:labels].nil?
-query += "#{opts[:event]}:#{opts[:start_date]}..#{opts[:end_date]}"
+query += "#{opts[:event]}:#{start_date}..#{end_date}"
 
 puts "Github filter query used: " + query
 
@@ -76,7 +81,7 @@ issues =  client.search_issues query
 
 message = "#{issues.total_count} issues "
 message += "tagged with #{opts[:labels]} " if !opts[:labels].nil?
-message += "were #{opts[:event]} between #{opts[:start_date]} and #{opts[:end_date]}"
+message += "were #{opts[:event]} between #{start_date} and #{end_date}"
 puts message
 
 write_to_csv(issues.items) if opts[:csv]
