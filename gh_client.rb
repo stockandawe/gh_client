@@ -15,12 +15,12 @@ def write_to_csv(issues)
       issue.labels.each do |label|
         labels << label.name
       end
-      row = [issue.id.to_s, 
-             issue.title, 
-             issue.url, 
-             labels.join('|'), 
-             issue.created_at&.strftime("%F %T"), 
-             issue.updated_at&.strftime("%F %T"), 
+      row = [issue.id.to_s,
+             issue.title,
+             issue.url,
+             labels.join('|'),
+             issue.created_at&.strftime("%F %T"),
+             issue.updated_at&.strftime("%F %T"),
              issue.closed_at&.strftime("%F %T")
       ]
       writer << row
@@ -52,7 +52,7 @@ end
 opts = Optimist::options do
   opt :repo, "Specify GitHub repo. E.g. 'stockandawe/gh_client'", type: :string
   opt :labels, "Specify a list of comma separated label names. E.g. 'Bug,Internal'", :type => :string, :default => nil
-  opt :event, "Specify of the event that you want to track. Can be either 'created' or 'closed'", :type => :string, :default => "created"
+  opt :event, "Specify the event that you want to track. Can be 'created', 'updated', or 'closed'", :type => :string, :default => "created"
   opt :start_date, "Specify the start date YYYY-MM-DD format", :type => :string, :default => "#{Time.now.year}-#{Time.now.month}-1"
   opt :end_date, "Specify the end date YYYY-MM-DD format", :type => :string, :default => "#{Time.now.year}-#{Time.now.month}-#{Time.now.day}"
   opt :csv, "Set as true a csv output", :type => :boolean, :default => false
@@ -66,7 +66,7 @@ end
 client = Octokit::Client.new(access_token: ENV["GITHUB_PAT"], per_page: 100)
 client.auto_paginate = true
 
-# make sure dates are formatted how gethub likes them 
+# make sure dates are formatted how GitHub API expects them
 # i.e.  22-8-9 => 2022-08-09
 start_date = Date.parse(opts[:start_date]).strftime("%Y-%m-%d")
 end_date = Date.parse(opts[:end_date]).strftime("%Y-%m-%d")
