@@ -36,8 +36,5 @@ DEPENDENCIES
   octokit (~> 4.0)
   optimist (~> 3.0, >= 3.0.1)
 
-RUBY VERSION
-   ruby 2.7.5p203
-
 BUNDLED WITH
    2.2.17
