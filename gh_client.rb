@@ -5,12 +5,25 @@ require 'octokit'
 require 'optparse'
 require 'optimist'
 require 'csv'
+require 'date'
 
 def write_to_csv(issues)
   file = "gh_client_#{Time.now}.csv"
   CSV.open(file, "w", :write_headers=> true, :headers => %w[ID Title URL Labels Created Updated Closed]) do |writer|
     issues.each do |issue|
-      writer << issue
+      labels = []
+      issue.labels.each do |label|
+        labels << label.name
+      end
+      row = [issue.id.to_s,
+             issue.title,
+             issue.url,
+             labels.join('|'),
+             issue.created_at&.strftime("%F %T"),
+             issue.updated_at&.strftime("%F %T"),
+             issue.closed_at&.strftime("%F %T")
+      ]
+      writer << row
     end
   end
 
@@ -38,8 +51,8 @@ end
 
 opts = Optimist::options do
   opt :repo, "Specify GitHub repo. E.g. 'stockandawe/gh_client'", type: :string
-  opt :labels, "Specify a list of comma separated label names. E.g. 'Bug,Internal'", :type => :string, :default => "Bug"
-  opt :state, "Specify state of the issue. Can be either 'open', 'closed', or 'all'", :type => :string, :default => "open"
+  opt :labels, "Specify a list of comma separated label names. E.g. 'Bug,Internal'", :type => :string, :default => nil
+  opt :event, "Specify the event that you want to track. Can be 'created', 'updated', or 'closed'", :type => :string, :default => "created"
   opt :start_date, "Specify the start date YYYY-MM-DD format", :type => :string, :default => "#{Time.now.year}-#{Time.now.month}-1"
   opt :end_date, "Specify the end date YYYY-MM-DD format", :type => :string, :default => "#{Time.now.year}-#{Time.now.month}-#{Time.now.day}"
   opt :csv, "Set as true a csv output", :type => :boolean, :default => false
@@ -53,24 +66,22 @@ end
 client = Octokit::Client.new(access_token: ENV["GITHUB_PAT"], per_page: 100)
 client.auto_paginate = true
 
-issues_1 = normalize_issues(
-  client.issues opts[:repo],
-                labels: opts[:labels],
-                state: opts[:state],
-                since: "#{opts[:start_date]}T00:00:00Z",
-                direction: "asc"
-)
+# make sure dates are formatted how GitHub API expects them
+# i.e.  22-8-9 => 2022-08-09
+start_date = Date.parse(opts[:start_date]).strftime("%Y-%m-%d")
+end_date = Date.parse(opts[:end_date]).strftime("%Y-%m-%d")
 
-issues_2 = normalize_issues(
-  client.issues "himaxwell/maxwell",
-                labels: opts[:labels],
-                state: opts[:state],
-                since: "#{opts[:end_date]}T00:00:00Z",
-                direction: "asc"
-)
+query = "repo:#{opts[:repo]} is:issue "
+query += "label:#{opts[:labels]} " if !opts[:labels].nil?
+query += "#{opts[:event]}:#{start_date}..#{end_date}"
 
-issues = issues_1 - issues_2
+puts "Github filter query used: " + query
 
-puts "#{issues.count} (#{opts[:state]}) issues tagged with #{opts[:labels]} between #{opts[:start_date]} and #{opts[:end_date]}"
+issues =  client.search_issues query
 
-write_to_csv(issues) if opts[:csv]
+message = "#{issues.total_count} issues "
+message += "tagged with #{opts[:labels]} " if !opts[:labels].nil?
+message += "were #{opts[:event]} between #{start_date} and #{end_date}"
+puts message
+
+write_to_csv(issues.items) if opts[:csv]
