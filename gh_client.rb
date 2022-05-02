@@ -72,7 +72,7 @@ start_date = Date.parse(opts[:start_date]).strftime("%Y-%m-%d")
 end_date = Date.parse(opts[:end_date]).strftime("%Y-%m-%d")
 
 query = "repo:#{opts[:repo]} is:issue "
-query += "label:#{opts[:labels]} " if !opts[:labels].nil?
+query += "label:\"#{opts[:labels]}\" " if !opts[:labels].nil?
 query += "#{opts[:event]}:#{start_date}..#{end_date}"
 
 puts "Github filter query used: " + query
