@@ -44,6 +44,14 @@ def normalize_issues(issues)
   end
 end
 
+# make sure dates are formatted how GitHub API expects them
+# ex:  22-8-9 => 2022-08-09
+# ex: 22-8-9T1:0:0-6 => 22-08-09T01:00:00-06:00
+def parse_date(date_string)
+  return DateTime.strptime(date_string,"%Y-%m-%d").strftime("%Y-%m-%d") if date_string.length < 10
+  return DateTime.strptime(date_string,"%Y-%m-%dT%H:%M:%S%Z").strftime("%Y-%m-%dT%H:%M:%S%Z")
+end
+
 if ENV["GITHUB_PAT"].empty?
   puts "Please configure your Private Access Token in GITHUB_PAT env varilable"
   exit
@@ -66,10 +74,8 @@ end
 client = Octokit::Client.new(access_token: ENV["GITHUB_PAT"], per_page: 100)
 client.auto_paginate = true
 
-# make sure dates are formatted how GitHub API expects them
-# i.e.  22-8-9 => 2022-08-09
-start_date = Date.parse(opts[:start_date]).strftime("%Y-%m-%d")
-end_date = Date.parse(opts[:end_date]).strftime("%Y-%m-%d")
+start_date = parse_date(opts[:start_date]) 
+end_date   = parse_date(opts[:end_date])
 
 query = "repo:#{opts[:repo]} is:issue "
 query += "label:\"#{opts[:labels]}\" " if !opts[:labels].nil?
