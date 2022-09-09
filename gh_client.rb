@@ -83,11 +83,12 @@ end
 
 def weekly_summary_report
   datelist = []
-  $opts[:weekly].times {|i| datelist << iso8601(nearest_saturday_from_today - (i*7*24*3600))}
+  ($opts[:weekly] + 1).times {|i| datelist << iso8601(nearest_saturday_from_today - (i*7*24*3600))}
   datelist.reverse!
   puts "start_date, end_date, bugs_created, bugs_closed, cs_created, cs_closed"
 
   datelist.each_with_index do |date,i|
+    break if i == datelist.count - 1 # No end date exists for last date in the list.
     start_date = date 
     end_date = datelist[i+1]
     bugs_created = $client.search_issues(prep_query('created','Bug', date, datelist[i+1])).total_count
@@ -95,7 +96,6 @@ def weekly_summary_report
     cs_created =   $client.search_issues(prep_query('created','Customer Support', date, datelist[i+1])).total_count
     cs_closed =    $client.search_issues(prep_query('closed','Customer Support', date, datelist[i+1])).total_count
     puts "#{start_date},#{end_date},#{bugs_created},#{bugs_closed},#{cs_created},#{cs_closed}"
-    sleep(1)
   end
 
   exit
