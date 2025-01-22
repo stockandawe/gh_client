@@ -9,10 +9,11 @@
 
 1. Show help/all command line options
 ```
-$ bundle exec ruby gh_client.rb --help                                                                      
+$ bundle exec ruby gh_client.rb --help
 Options:
  -r, --repo=<s>          Specify GitHub repo. E.g. 'stockandawe/gh_client'
  -l, --labels=<s>        Specify a list of comma separated label names. E.g. 'Bug,Internal'
+ -l, --omit_labels=<s>   Specify a list of comma separated label names to exclude. E.g. 'Epic,Chore'
  -e, --event=<s>         Specify the event that you want to track. Can be 'created', 'updated', or 'closed' (default: created)
  -s, --start-date=<s>    Specify the start date YYYY-MM-DD format (default: 2022-4-1)
  -n, --end-date=<s>      Specify the end date YYYY-MM-DD format (default: 2022-4-22)
