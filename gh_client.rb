@@ -6,7 +6,6 @@ require 'optparse'
 require 'optimist'
 require 'csv'
 require 'date'
-require 'debug'
 
 def write_to_csv(issues)
   file = "gh_client_#{Time.now}.csv"
