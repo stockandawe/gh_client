@@ -74,37 +74,98 @@ excluded_labels = opts[:omit_labels].split(',') if opts[:omit_labels]
 start_date = Date.parse(opts[:start_date]).strftime("%Y-%m-%d")
 end_date = Date.parse(opts[:end_date]).strftime("%Y-%m-%d")
 
-puts "Fetching all issues from #{opts[:repo]}..."
-
-# Fetch all issues (open and closed) with pagination
-issues = client.issues(opts[:repo], state: 'all')
-
-puts "Filtering issues based on criteria..."
-
-# Filter by required labels if specified
-if !opts[:labels].nil?
-  required_labels = opts[:labels].split(',').map(&:strip)
-  issues = issues.select do |issue|
-    issue_label_names = issue.labels.map(&:name)
-    required_labels.all? { |label| issue_label_names.include?(label) }
-  end
-end
-
-# Filter by date range based on event type
-start_date_parsed = Date.parse(start_date)
-end_date_parsed = Date.parse(end_date)
-
-issues = issues.select do |issue|
-  event_date = case opts[:event]
-                when 'created'
-                  Date.parse(issue.created_at.to_s)
-                when 'updated' 
-                  Date.parse(issue.updated_at.to_s)
-                when 'closed'
-                  issue.closed_at ? Date.parse(issue.closed_at.to_s) : nil
-                end
+# Check if we can use the faster search API (under 1000 results expected)
+# For single labels and short time periods, search API is much faster
+if !opts[:labels].nil? && opts[:labels].split(',').length == 1
+  puts "Using GitHub Search API for faster results..."
   
-  event_date && event_date >= start_date_parsed && event_date <= end_date_parsed
+  query = "repo:#{opts[:repo]} is:issue "
+  labels = opts[:labels].split(',')
+  labels.each do |label|
+    query += "label:\"#{label.strip}\" "
+  end
+  query += "#{opts[:event]}:#{start_date}..#{end_date}"
+  
+  puts "Search query: #{query}"
+  
+  begin
+    search_results = client.search_issues(query)
+    issues = search_results.items
+    puts "Found #{issues.length} issues via search API"
+    
+    # If we hit the 1000 limit, warn user and fall back to full fetch
+    if issues.length >= 1000
+      puts "WARNING: Search API returned 1000 results (the maximum). Results may be incomplete."
+      puts "Consider using a shorter date range or falling back to full repository scan."
+    end
+  rescue => e
+    puts "Search API failed: #{e.message}"
+    puts "Falling back to full repository scan..."
+    issues = client.issues(opts[:repo], state: 'all')
+    
+    # Apply client-side filtering
+    puts "Filtering issues based on criteria..."
+    
+    # Filter by required labels if specified
+    if !opts[:labels].nil?
+      required_labels = opts[:labels].split(',').map(&:strip)
+      issues = issues.select do |issue|
+        issue_label_names = issue.labels.map(&:name)
+        required_labels.all? { |label| issue_label_names.include?(label) }
+      end
+    end
+    
+    # Filter by date range based on event type
+    start_date_parsed = Date.parse(start_date)
+    end_date_parsed = Date.parse(end_date)
+    
+    issues = issues.select do |issue|
+      event_date = case opts[:event]
+                    when 'created'
+                      Date.parse(issue.created_at.to_s)
+                    when 'updated' 
+                      Date.parse(issue.updated_at.to_s)
+                    when 'closed'
+                      issue.closed_at ? Date.parse(issue.closed_at.to_s) : nil
+                    end
+      
+      event_date && event_date >= start_date_parsed && event_date <= end_date_parsed
+    end
+  end
+else
+  puts "Using full repository scan (multiple labels or complex query)..."
+  puts "Fetching all issues from #{opts[:repo]}..."
+  
+  # Fetch all issues (open and closed) with pagination
+  issues = client.issues(opts[:repo], state: 'all')
+  
+  puts "Filtering issues based on criteria..."
+  
+  # Filter by required labels if specified
+  if !opts[:labels].nil?
+    required_labels = opts[:labels].split(',').map(&:strip)
+    issues = issues.select do |issue|
+      issue_label_names = issue.labels.map(&:name)
+      required_labels.all? { |label| issue_label_names.include?(label) }
+    end
+  end
+  
+  # Filter by date range based on event type
+  start_date_parsed = Date.parse(start_date)
+  end_date_parsed = Date.parse(end_date)
+  
+  issues = issues.select do |issue|
+    event_date = case opts[:event]
+                  when 'created'
+                    Date.parse(issue.created_at.to_s)
+                  when 'updated' 
+                    Date.parse(issue.updated_at.to_s)
+                  when 'closed'
+                    issue.closed_at ? Date.parse(issue.closed_at.to_s) : nil
+                  end
+    
+    event_date && event_date >= start_date_parsed && event_date <= end_date_parsed
+  end
 end
 
 # Sort issues by the event date
