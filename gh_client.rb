@@ -74,18 +74,54 @@ excluded_labels = opts[:omit_labels].split(',') if opts[:omit_labels]
 start_date = Date.parse(opts[:start_date]).strftime("%Y-%m-%d")
 end_date = Date.parse(opts[:end_date]).strftime("%Y-%m-%d")
 
-query = "repo:#{opts[:repo]} is:issue "
+puts "Fetching all issues from #{opts[:repo]}..."
+
+# Fetch all issues (open and closed) with pagination
+issues = client.issues(opts[:repo], state: 'all')
+
+puts "Filtering issues based on criteria..."
+
+# Filter by required labels if specified
 if !opts[:labels].nil?
-  labels = opts[:labels].split(',')
-  labels.each do |label|
-    query += "label:\"#{label.strip}\" "
+  required_labels = opts[:labels].split(',').map(&:strip)
+  issues = issues.select do |issue|
+    issue_label_names = issue.labels.map(&:name)
+    required_labels.all? { |label| issue_label_names.include?(label) }
   end
 end
-query += "#{opts[:event]}:#{start_date}..#{end_date}"
 
-puts "Github filter query used: " + query
+# Filter by date range based on event type
+start_date_parsed = Date.parse(start_date)
+end_date_parsed = Date.parse(end_date)
 
-issues = client.search_issues(query).items
+issues = issues.select do |issue|
+  event_date = case opts[:event]
+                when 'created'
+                  Date.parse(issue.created_at.to_s)
+                when 'updated' 
+                  Date.parse(issue.updated_at.to_s)
+                when 'closed'
+                  issue.closed_at ? Date.parse(issue.closed_at.to_s) : nil
+                end
+  
+  event_date && event_date >= start_date_parsed && event_date <= end_date_parsed
+end
+
+# Sort issues by the event date
+issues = issues.sort_by do |issue|
+  case opts[:event]
+  when 'created'
+    issue.created_at
+  when 'updated'
+    issue.updated_at
+  when 'closed'
+    issue.closed_at || Time.at(0) # Handle nil closed_at by putting at beginning
+  end
+end
+
+puts "Applied filters: event=#{opts[:event]}, date_range=#{start_date}..#{end_date}"
+puts "Required labels: #{opts[:labels]}" if opts[:labels]
+puts "Sorted by: #{opts[:event]} date (earliest first)"
 
 unless excluded_labels.nil?
   puts "Excluding issues with labels: #{excluded_labels.join(', ')}"
